@@ -1,0 +1,10 @@
+{
+  "imports": {
+    "@std/http": "jsr:@std/http@^1.0"
+  },
+  "tasks": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  }
+}

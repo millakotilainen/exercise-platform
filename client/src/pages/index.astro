@@ -1,0 +1,9 @@
+---
+import Layout from "../layouts/Layout.astro";
+import LanguageList from "../components/LanguageList.svelte";
+---
+
+<Layout>
+    <h1>Available languages</h1>
+    <LanguageList client:load />
+</Layout>

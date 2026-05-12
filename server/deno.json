@@ -1,0 +1,10 @@
+{
+  "imports": {
+    "@hono/hono": "jsr:@hono/hono@4.6.5",
+    "postgres": "https://deno.land/x/postgresjs@v3.4.4/mod.js"
+  },
+  "tasks": {
+    "dev": "deno run --watch --allow-net --allow-env app-run.js",
+    "start": "deno run --allow-net --allow-env app-run.js"
+  }
+}
