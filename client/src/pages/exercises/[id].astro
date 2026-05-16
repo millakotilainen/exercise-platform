@@ -5,4 +5,6 @@ const { id } = Astro.params;
 export const prerender = false;
 ---
 
-<Exercise exerciseId={id} client:load />
+<Layout>
+  <Exercise exerciseId={id} client:load />
+</Layout>

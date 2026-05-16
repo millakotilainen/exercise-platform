@@ -1,6 +1,9 @@
 <script>
     import { onMount } from "svelte";
     import ExerciseForm from "./ExerciseForm.svelte";
+    import { useUserState } from "../states/userState.svelte.js";
+    const userState = useUserState();
+
     let { exerciseId } = $props();
     let exercise = $state(null);
 
@@ -13,5 +16,9 @@
 {#if exercise}
     <h1>{exercise.title}</h1>
     <p>{exercise.description}</p>
-    <ExerciseForm exerciseId={exerciseId} />
+    {#if userState.email}
+        <ExerciseForm exerciseId={exerciseId} />
+    {:else if !userState.loading}
+        <p>Login or register to complete exercises.</p>   
+    {/if}
 {/if}

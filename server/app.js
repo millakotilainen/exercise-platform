@@ -1,9 +1,35 @@
 import { Hono } from "@hono/hono";
+import { streamSSE } from "@hono/hono/streaming";
 import { cache } from "@hono/hono/cache";
 import postgres from "postgres";
 import { Redis } from "npm:ioredis";
+import { auth } from "./auth.js";
 
 const app = new Hono();
+
+app.on(["POST", "GET"], "/api/auth/**", (c) => auth.handler(c.req.raw));
+
+const requireAuth = async (c, next) => {
+  const user = c.get("user");
+  if (!user) {
+    c.status(401);
+    return c.json({ message: "Unauthorized" });
+  }
+
+  return next();
+};
+
+app.use("*", async (c, next) => {
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (!session) {
+    return next();
+  }
+
+  c.set("user", session.user.name);
+  return next();
+});
+
+
 const sql = postgres({
   host: Deno.env.get("POSTGRES_HOST"),
   port: Number(Deno.env.get("POSTGRES_PORT") ?? "5432"),
@@ -70,6 +96,10 @@ app.get("/api/languages/:id/exercises", async (c) => {
   return c.json(exercises);
 });
 
+app.use("/api/exercises/:id/submissions", requireAuth);
+app.use("/api/submissions/:id/status", requireAuth);
+
+
 app.post("/api/exercises/:id/submissions", async (c) => {
   const exerciseId = c.req.param("id");
   const { source_code } = await c.req.json();
@@ -102,7 +132,7 @@ app.get("/api/exercises/:id", async (c) => {
 });
 
 app.get("/api/submissions/:id/status", async (c) => {
-  const submissionId = c.req.param("id"); 
+  const submissionId = c.req.param("id");
 
   const [submission] = await sql`
     SELECT grading_status, grade
@@ -116,6 +146,34 @@ app.get("/api/submissions/:id/status", async (c) => {
 
   return c.json(submission);
 
+});
+
+const streams = new Set();
+
+const notifyActiveUsers = async () => {
+  const users = streams.size;
+  for (const stream of streams) {
+    stream.writeSSE({ data: `Active users: ${users}` });
+  }
+};
+
+app.get("/api/stats/sse-active-users", (c) => {
+  return streamSSE(c, async (stream) => {
+    streams.add(stream);
+    await notifyActiveUsers();
+
+    while (!stream.aborted && !stream.closed) {
+      await stream.sleep(1000);
+    }
+
+    streams.delete(stream);
+    await notifyActiveUsers();
+  });
+});
+
+app.get("/api/lgtm-test", (c) => {
+  console.log("Hello log collection :)");
+  return c.json({ message: "Hello, world!" });
 });
 
 export default app;
